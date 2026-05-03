@@ -1,0 +1,61 @@
+name: Build 237 RAX3000M eMMC 算力版
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Environment
+        run: |
+          sudo apt update
+          sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
+          git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfreetype6-dev libgmp-dev libxml2-dev \
+          libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw6-dev libreadline-dev libssl-dev \
+          libtool libyaml-dev lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3-pyelftools \
+          python3-docutils python3-pip python3-ply python3-yaml qemu-utils rsync scons squashfs-tools subversion swig \
+          texinfo uglifyjs unzip vim wget xmlto xxd zlib1g-dev zstd
+
+      - name: Clone 237 Source
+        run: |
+          git clone https://github.com/padavanonly/immortalwrt-mt798x openwrt
+          cd openwrt
+
+      - name: Update Feeds
+        run: |
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Config RAX3000M eMMC
+        run: |
+          cd openwrt
+          cat > .config << EOF
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_cmcc_rax3000m=y
+          CONFIG_PACKAGE_kmod-mt7981-firmware=y
+          CONFIG_PACKAGE_wifi-mtwifi-cfg=y
+          EOF
+          make defconfig
+
+      - name: Download
+        run: |
+          cd openwrt
+          make download -j10 V=s
+
+      - name: Build
+        run: |
+          cd openwrt
+          make -j$(nproc) V=s
+
+      - name: Upload Firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: openwrt/bin/targets/mediatek/filogic/*.itb
