@@ -32,22 +32,28 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Config RAX3000M eMMC
+      - name: Config RAX3000M
         run: |
           cd openwrt
-          cat > .config << EOF
+          cat > .config << 'EOF'
           CONFIG_TARGET_mediatek=y
           CONFIG_TARGET_mediatek_filogic=y
           CONFIG_TARGET_mediatek_filogic_DEVICE_cmcc_rax3000m=y
           CONFIG_PACKAGE_kmod-mt7981-firmware=y
           CONFIG_PACKAGE_wifi-mtwifi-cfg=y
+          CONFIG_PACKAGE_wpad-openssl=y
+          CONFIG_PACKAGE_luci=y
+          CONFIG_PACKAGE_luci-app-opkg=y
+          CONFIG_PACKAGE_luci-base=y
+          CONFIG_PACKAGE_luci-lib-ipkg=y
+          CONFIG_PACKAGE_luci-light=y
           EOF
           make defconfig
 
       - name: Download
         run: |
           cd openwrt
-          make download -j10 V=s
+          make download -j$(nproc) V=s
 
       - name: Build
         run: |
